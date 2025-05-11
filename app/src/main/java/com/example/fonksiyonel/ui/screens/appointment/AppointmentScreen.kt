@@ -20,7 +20,7 @@ import com.maxkeppeler.sheets.calendar.models.CalendarSelection
 import com.maxkeppeler.sheets.clock.ClockDialog
 import com.maxkeppeler.sheets.clock.models.ClockConfig
 import com.maxkeppeler.sheets.clock.models.ClockSelection
-import com.maxkeppeler.sheets.core.models.base.rememberSheetState
+import com.maxkeppeler.sheets.core.CoreDialog
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.LocalTime
@@ -61,30 +61,32 @@ fun AppointmentScreen(
     // Calendar Dialog
     if (showCalendarDialog) {
         CalendarDialog(
-            state = rememberSheetState(visible = showCalendarDialog, onCloseRequest = { showCalendarDialog = false }),
-            config = CalendarConfig(
-                yearSelection = true,
-                monthSelection = true
-            ),
-            selection = CalendarSelection.Date { date ->
+            onPositiveClick = { date ->
                 selectedDate = date
                 showCalendarDialog = false
                 showTimeDialog = true
-            }
+            },
+            onNegativeClick = { showCalendarDialog = false },
+            onDismissRequest = { showCalendarDialog = false },
+            config = CalendarConfig(
+                yearSelection = true,
+                monthSelection = true
+            )
         )
     }
     
     // Time Dialog
     if (showTimeDialog) {
         ClockDialog(
-            state = rememberSheetState(visible = showTimeDialog, onCloseRequest = { showTimeDialog = false }),
-            config = ClockConfig(
-                is24HourFormat = true
-            ),
-            selection = ClockSelection.HoursMinutes { hours, minutes ->
+            onPositiveClick = { hours, minutes -> 
                 selectedTime = LocalTime.of(hours, minutes)
                 showTimeDialog = false
-            }
+            },
+            onNegativeClick = { showTimeDialog = false },
+            onDismissRequest = { showTimeDialog = false },
+            config = ClockConfig(
+                is24HourFormat = true
+            )
         )
     }
     
