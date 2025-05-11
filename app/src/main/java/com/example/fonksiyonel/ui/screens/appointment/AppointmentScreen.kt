@@ -20,6 +20,7 @@ import com.maxkeppeler.sheets.calendar.models.CalendarSelection
 import com.maxkeppeler.sheets.clock.ClockDialog
 import com.maxkeppeler.sheets.clock.models.ClockConfig
 import com.maxkeppeler.sheets.clock.models.ClockSelection
+import com.maxkeppeler.sheets.core.models.base.rememberSheetState
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.LocalTime
@@ -60,7 +61,7 @@ fun AppointmentScreen(
     // Calendar Dialog
     if (showCalendarDialog) {
         CalendarDialog(
-            onCloseRequest = { showCalendarDialog = false },
+            state = rememberSheetState(visible = showCalendarDialog, onCloseRequest = { showCalendarDialog = false }),
             config = CalendarConfig(
                 yearSelection = true,
                 monthSelection = true
@@ -76,7 +77,7 @@ fun AppointmentScreen(
     // Time Dialog
     if (showTimeDialog) {
         ClockDialog(
-            onCloseRequest = { showTimeDialog = false },
+            state = rememberSheetState(visible = showTimeDialog, onCloseRequest = { showTimeDialog = false }),
             config = ClockConfig(
                 is24HourFormat = true
             ),
