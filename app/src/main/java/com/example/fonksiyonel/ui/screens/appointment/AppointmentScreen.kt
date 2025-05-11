@@ -5,7 +5,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
-import androidx.compose.material3.MenuAnchorType
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -90,8 +89,11 @@ fun AppointmentScreen(
     // Time Picker Dialog
     if (showTimePicker) {
         val calendar = Calendar.getInstance()
-        val hour = calendar.get(Calendar.HOUR_OF_DAY)
-        val minute = calendar.get(Calendar.MINUTE)
+        val initialHour = calendar.get(Calendar.HOUR_OF_DAY)
+        val initialMinute = calendar.get(Calendar.MINUTE)
+        
+        var selectedHour by remember { mutableStateOf(initialHour) }
+        var selectedMinute by remember { mutableStateOf(initialMinute) }
         
         AlertDialog(
             onDismissRequest = { showTimePicker = false },
@@ -100,85 +102,43 @@ fun AppointmentScreen(
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("Lütfen randevu saatini seçin", modifier = Modifier.padding(bottom = 16.dp))
                     
-                    // Simple time selector with two dropdown menus
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        // Hour selector
-                        var selectedHour by remember { mutableStateOf(hour) }
-                        var hourExpanded by remember { mutableStateOf(false) }
+                    // Simple time selector with sliders
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text("Saat: $selectedHour")
+                        Slider(
+                            value = selectedHour.toFloat(),
+                            onValueChange = { selectedHour = it.toInt() },
+                            valueRange = 8f..20f,
+                            steps = 11,
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        )
                         
-                        ExposedDropdownMenuBox(
-                            expanded = hourExpanded,
-                            onExpandedChange = { hourExpanded = it },
-                            modifier = Modifier.width(100.dp)
-                        ) {
-                            TextField(
-                                value = selectedHour.toString(),
-                                onValueChange = {},
-                                readOnly = true,
-                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = hourExpanded) },
-                                modifier = Modifier.menuAnchor(MenuAnchorType.Dropdown, true)
-                            )
-                            
-                            ExposedDropdownMenu(
-                                expanded = hourExpanded,
-                                onDismissRequest = { hourExpanded = false }
-                            ) {
-                                for (h in 8..20) {
-                                    DropdownMenuItem(
-                                        text = { Text(h.toString()) },
-                                        onClick = {
-                                            selectedHour = h
-                                            hourExpanded = false
-                                        }
-                                    )
-                                }
-                            }
-                        }
+                        Text("Dakika: ${selectedMinute.toString().padStart(2, '0')}")
+                        Slider(
+                            value = selectedMinute.toFloat(),
+                            onValueChange = { 
+                                // Round to nearest 5 minutes
+                                val rounded = (it / 5).toInt() * 5
+                                selectedMinute = rounded
+                            },
+                            valueRange = 0f..55f,
+                            steps = 11,
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        )
                         
-                        Text(":", modifier = Modifier.padding(horizontal = 8.dp))
-                        
-                        // Minute selector
-                        var selectedMinute by remember { mutableStateOf(minute) }
-                        var minuteExpanded by remember { mutableStateOf(false) }
-                        
-                        ExposedDropdownMenuBox(
-                            expanded = minuteExpanded,
-                            onExpandedChange = { minuteExpanded = it },
-                            modifier = Modifier.width(100.dp)
-                        ) {
-                            TextField(
-                                value = selectedMinute.toString().padStart(2, '0'),
-                                onValueChange = {},
-                                readOnly = true,
-                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = minuteExpanded) },
-                                modifier = Modifier.menuAnchor(MenuAnchorType.Dropdown, true)
-                            )
-                            
-                            ExposedDropdownMenu(
-                                expanded = minuteExpanded,
-                                onDismissRequest = { minuteExpanded = false }
-                            ) {
-                                for (m in 0..59 step 15) {
-                                    DropdownMenuItem(
-                                        text = { Text(m.toString().padStart(2, '0')) },
-                                        onClick = {
-                                            selectedMinute = m
-                                            minuteExpanded = false
-                                        }
-                                    )
-                                }
-                            }
-                        }
+                        // Display selected time
+                        Text(
+                            text = "Seçilen Saat: $selectedHour:${selectedMinute.toString().padStart(2, '0')}",
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(top = 16.dp)
+                        )
                     }
                 }
             },
             confirmButton = {
                 Button(
                     onClick = {
-                        val calendar = Calendar.getInstance()
-                        val hour = calendar.get(Calendar.HOUR_OF_DAY)
-                        val minute = calendar.get(Calendar.MINUTE)
-                        selectedTime = LocalTime.of(hour, minute)
+                        selectedTime = LocalTime.of(selectedHour, selectedMinute)
                         showTimePicker = false
                     }
                 ) {
