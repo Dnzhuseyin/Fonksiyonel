@@ -14,13 +14,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.fonksiyonel.R
-import com.maxkeppeler.sheets.calendar.CalendarDialog
-import com.maxkeppeler.sheets.calendar.models.CalendarConfig
-import com.maxkeppeler.sheets.calendar.models.CalendarSelection
-import com.maxkeppeler.sheets.clock.ClockDialog
-import com.maxkeppeler.sheets.clock.models.ClockConfig
-import com.maxkeppeler.sheets.clock.models.ClockSelection
 import java.text.SimpleDateFormat
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
@@ -43,10 +38,10 @@ fun AppointmentScreen(
     var showSuccessDialog by remember { mutableStateOf(false) }
     
     // Calendar dialog state
-    var showCalendarDialog by remember { mutableStateOf(false) }
+    var showDatePicker by remember { mutableStateOf(false) }
     
     // Time dialog state
-    var showTimeDialog by remember { mutableStateOf(false) }
+    var showTimePicker by remember { mutableStateOf(false) }
     
     // Available doctors (in a real app, this would come from a database)
     val availableDoctors = remember {
@@ -57,30 +52,144 @@ fun AppointmentScreen(
         )
     }
     
-    // Calendar Dialog
-    if (showCalendarDialog) {
-        CalendarDialog({
-            showCalendarDialog = false
-        }, CalendarConfig(
-            yearSelection = true,
-            monthSelection = true
-        ), CalendarSelection.Date { date ->
-            selectedDate = date
-            showCalendarDialog = false
-            showTimeDialog = true
-        })
+    // Date Picker Dialog
+    if (showDatePicker) {
+        val calendar = Calendar.getInstance()
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        selectedDate = LocalDate.of(
+                            calendar.get(Calendar.YEAR),
+                            calendar.get(Calendar.MONTH) + 1,
+                            calendar.get(Calendar.DAY_OF_MONTH)
+                        )
+                        showDatePicker = false
+                        showTimePicker = true
+                    }
+                ) {
+                    Text("Tamam")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text("İptal")
+                }
+            }
+        ) {
+            DatePicker(
+                state = rememberDatePickerState(),
+                title = { Text("Tarih Seçin") },
+                headline = { Text("Lütfen randevu tarihini seçin") }
+            )
+        }
     }
     
-    // Time Dialog
-    if (showTimeDialog) {
-        ClockDialog({
-            showTimeDialog = false
-        }, ClockConfig(
-            is24HourFormat = true
-        ), ClockSelection.HoursMinutes { hours, minutes ->
-            selectedTime = LocalTime.of(hours, minutes)
-            showTimeDialog = false
-        })
+    // Time Picker Dialog
+    if (showTimePicker) {
+        val calendar = Calendar.getInstance()
+        val hour = calendar.get(Calendar.HOUR_OF_DAY)
+        val minute = calendar.get(Calendar.MINUTE)
+        
+        AlertDialog(
+            onDismissRequest = { showTimePicker = false },
+            title = { Text("Saat Seçin") },
+            text = { 
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("Lütfen randevu saatini seçin", modifier = Modifier.padding(bottom = 16.dp))
+                    
+                    // Simple time selector with two dropdown menus
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        // Hour selector
+                        var selectedHour by remember { mutableStateOf(hour) }
+                        var hourExpanded by remember { mutableStateOf(false) }
+                        
+                        ExposedDropdownMenuBox(
+                            expanded = hourExpanded,
+                            onExpandedChange = { hourExpanded = it },
+                            modifier = Modifier.width(100.dp)
+                        ) {
+                            TextField(
+                                value = selectedHour.toString(),
+                                onValueChange = {},
+                                readOnly = true,
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = hourExpanded) },
+                                modifier = Modifier.menuAnchor()
+                            )
+                            
+                            ExposedDropdownMenu(
+                                expanded = hourExpanded,
+                                onDismissRequest = { hourExpanded = false }
+                            ) {
+                                for (h in 8..20) {
+                                    DropdownMenuItem(
+                                        text = { Text(h.toString()) },
+                                        onClick = {
+                                            selectedHour = h
+                                            hourExpanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                        
+                        Text(":", modifier = Modifier.padding(horizontal = 8.dp))
+                        
+                        // Minute selector
+                        var selectedMinute by remember { mutableStateOf(minute) }
+                        var minuteExpanded by remember { mutableStateOf(false) }
+                        
+                        ExposedDropdownMenuBox(
+                            expanded = minuteExpanded,
+                            onExpandedChange = { minuteExpanded = it },
+                            modifier = Modifier.width(100.dp)
+                        ) {
+                            TextField(
+                                value = selectedMinute.toString().padStart(2, '0'),
+                                onValueChange = {},
+                                readOnly = true,
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = minuteExpanded) },
+                                modifier = Modifier.menuAnchor()
+                            )
+                            
+                            ExposedDropdownMenu(
+                                expanded = minuteExpanded,
+                                onDismissRequest = { minuteExpanded = false }
+                            ) {
+                                for (m in 0..59 step 15) {
+                                    DropdownMenuItem(
+                                        text = { Text(m.toString().padStart(2, '0')) },
+                                        onClick = {
+                                            selectedMinute = m
+                                            minuteExpanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val calendar = Calendar.getInstance()
+                        val hour = calendar.get(Calendar.HOUR_OF_DAY)
+                        val minute = calendar.get(Calendar.MINUTE)
+                        selectedTime = LocalTime.of(hour, minute)
+                        showTimePicker = false
+                    }
+                ) {
+                    Text("Tamam")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showTimePicker = false }) {
+                    Text("İptal")
+                }
+            }
+        )
     }
     
     // Success Dialog
@@ -217,7 +326,7 @@ fun AppointmentScreen(
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(12.dp),
                     trailingIcon = {
-                        IconButton(onClick = { showCalendarDialog = true }) {
+                        IconButton(onClick = { showDatePicker = true }) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_calendar),
                                 contentDescription = "Tarih Seç"
@@ -240,7 +349,7 @@ fun AppointmentScreen(
                     trailingIcon = {
                         IconButton(onClick = { 
                             if (selectedDate != null) {
-                                showTimeDialog = true
+                                showTimePicker = true
                             } else {
                                 errorMessage = "Önce tarih seçmelisiniz"
                             }
