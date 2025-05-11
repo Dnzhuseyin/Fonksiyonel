@@ -20,7 +20,6 @@ import com.maxkeppeler.sheets.calendar.models.CalendarSelection
 import com.maxkeppeler.sheets.clock.ClockDialog
 import com.maxkeppeler.sheets.clock.models.ClockConfig
 import com.maxkeppeler.sheets.clock.models.ClockSelection
-import com.maxkeppeler.sheets.core.CoreDialog
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.LocalTime
@@ -60,34 +59,28 @@ fun AppointmentScreen(
     
     // Calendar Dialog
     if (showCalendarDialog) {
-        CalendarDialog(
-            onPositiveClick = { date ->
-                selectedDate = date
-                showCalendarDialog = false
-                showTimeDialog = true
-            },
-            onNegativeClick = { showCalendarDialog = false },
-            onDismissRequest = { showCalendarDialog = false },
-            config = CalendarConfig(
-                yearSelection = true,
-                monthSelection = true
-            )
-        )
+        CalendarDialog({
+            showCalendarDialog = false
+        }, CalendarConfig(
+            yearSelection = true,
+            monthSelection = true
+        ), CalendarSelection.Date { date ->
+            selectedDate = date
+            showCalendarDialog = false
+            showTimeDialog = true
+        })
     }
     
     // Time Dialog
     if (showTimeDialog) {
-        ClockDialog(
-            onPositiveClick = { hours, minutes -> 
-                selectedTime = LocalTime.of(hours, minutes)
-                showTimeDialog = false
-            },
-            onNegativeClick = { showTimeDialog = false },
-            onDismissRequest = { showTimeDialog = false },
-            config = ClockConfig(
-                is24HourFormat = true
-            )
-        )
+        ClockDialog({
+            showTimeDialog = false
+        }, ClockConfig(
+            is24HourFormat = true
+        ), ClockSelection.HoursMinutes { hours, minutes ->
+            selectedTime = LocalTime.of(hours, minutes)
+            showTimeDialog = false
+        })
     }
     
     // Success Dialog
