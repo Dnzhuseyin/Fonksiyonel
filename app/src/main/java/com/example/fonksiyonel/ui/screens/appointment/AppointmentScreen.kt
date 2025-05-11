@@ -5,6 +5,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -115,7 +116,7 @@ fun AppointmentScreen(
                                 onValueChange = {},
                                 readOnly = true,
                                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = hourExpanded) },
-                                modifier = Modifier.menuAnchor()
+                                modifier = Modifier.menuAnchor(MenuAnchorType.Dropdown, true)
                             )
                             
                             ExposedDropdownMenu(
@@ -150,7 +151,7 @@ fun AppointmentScreen(
                                 onValueChange = {},
                                 readOnly = true,
                                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = minuteExpanded) },
-                                modifier = Modifier.menuAnchor()
+                                modifier = Modifier.menuAnchor(MenuAnchorType.Dropdown, true)
                             )
                             
                             ExposedDropdownMenu(

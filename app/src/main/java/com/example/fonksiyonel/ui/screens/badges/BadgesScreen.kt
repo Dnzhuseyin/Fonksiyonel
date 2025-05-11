@@ -167,7 +167,7 @@ fun BadgesScreen(
                     )
                     
                     LinearProgressIndicator(
-                        progress = 0.6f,
+                        progress = { 0.6f },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(8.dp)
