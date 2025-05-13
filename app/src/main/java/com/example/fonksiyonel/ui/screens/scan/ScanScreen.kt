@@ -125,16 +125,12 @@ fun ScanScreen(
     // Function to analyze the image
     fun analyzeImage(uri: Uri) {
         isAnalyzing = true
-        // Simulate analysis
+        // Simulate analysis - replace with actual ML model in production
         android.os.Handler().postDelayed({
             analysisResult = DiagnosisResult(
-                id = UUID.randomUUID().toString(),
-                imageUri = uri.toString(),
                 cancerType = CancerType.MELANOMA,
-                riskLevel = RiskLevel.MEDIUM,
-                confidence = 0.78f,
-                analysisDate = System.currentTimeMillis(),
-                notes = "Cilt lekesi analiz edildi. Doktor kontrolü önerilir."
+                confidencePercentage = 0.78f,
+                riskLevel = RiskLevel.MEDIUM
             )
             isAnalyzing = false
         }, 2000)
@@ -154,19 +150,7 @@ fun ScanScreen(
             }
         }
     }
-    val analyzeImage = {
-        isAnalyzing = true
-        
-        // Simulate AI analysis (replace with actual TensorFlow Lite model inference)
-        // In a real app, this would be a call to your ML model
-        analysisResult = DiagnosisResult(
-            cancerType = CancerType.BENIGN,
-            confidencePercentage = 0.92f,
-            riskLevel = RiskLevel.LOW
-        )
-        
-        isAnalyzing = false
-    }
+
 
     // Camera Preview Composable
     @androidx.annotation.OptIn(androidx.camera.core.ExperimentalGetImage::class)
