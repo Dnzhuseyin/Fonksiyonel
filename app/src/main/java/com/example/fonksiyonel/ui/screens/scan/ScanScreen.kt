@@ -1,12 +1,14 @@
 package com.example.fonksiyonel.ui.screens.scan
 
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.camera.core.CameraSelector
-import androidx.camera.core.ImageCapture
-import androidx.camera.core.ImageCaptureException
-import androidx.camera.core.Preview
+import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.Image
@@ -14,6 +16,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,7 +26,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -55,6 +59,20 @@ fun ScanScreen(
     var showCamera by remember { mutableStateOf(false) }
     var isAnalyzing by remember { mutableStateOf(false) }
     var analysisResult by remember { mutableStateOf<DiagnosisResult?>(null) }
+    var cameraError by remember { mutableStateOf<String?>(null) }
+    var lensFacing by remember { mutableIntStateOf(CameraSelector.LENS_FACING_BACK) }
+    var flashEnabled by remember { mutableStateOf(false) }
+    
+    // Check and request camera permissions
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            showCamera = true
+        } else {
+            cameraError = "Kamera izni reddedildi. Lütfen ayarlardan izin verin."
+        }
+    }
     
     // Gallery launcher
     val galleryLauncher = rememberLauncherForActivityResult(
@@ -67,38 +85,75 @@ fun ScanScreen(
     }
     
     // Camera setup
-    val imageCapture = remember { ImageCapture.Builder().build() }
-    val executor = remember { ContextCompat.getMainExecutor(context) }
+    val imageCapture = remember { 
+        ImageCapture.Builder()
+            .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+            .build() 
+    }
+    val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
+    val cameraExecutor = remember { ContextCompat.getMainExecutor(context) }
     
     // Function to take a photo
     val takePhoto = {
         val photoFile = File(
-            context.externalCacheDir,
-            SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())
-                .format(Date()) + ".jpg"
+            context.getExternalFilesDir(null),
+            "IMG_${SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())}.jpg"
         )
         
         val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
         
         imageCapture.takePicture(
             outputOptions,
-            executor,
+            cameraExecutor,
             object : ImageCapture.OnImageSavedCallback {
                 override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-                    outputFileResults.savedUri?.let {
-                        imageUri = it
-                        showCamera = false
-                    }
+                    val savedUri = Uri.fromFile(photoFile)
+                    imageUri = savedUri
+                    showCamera = false
+                    // Trigger analysis after taking photo
+                    analyzeImage(savedUri)
                 }
                 
                 override fun onError(exception: ImageCaptureException) {
-                    // Handle error
+                    cameraError = "Fotoğraf çekilirken hata oluştu: ${exception.message}"
+                    Log.e("CameraX", "Photo capture failed: ${exception.message}", exception)
                 }
             }
         )
     }
     
     // Function to analyze the image
+    fun analyzeImage(uri: Uri) {
+        isAnalyzing = true
+        // Simulate analysis
+        android.os.Handler().postDelayed({
+            analysisResult = DiagnosisResult(
+                id = UUID.randomUUID().toString(),
+                imageUri = uri.toString(),
+                cancerType = CancerType.MELANOMA,
+                riskLevel = RiskLevel.MEDIUM,
+                confidence = 0.78f,
+                analysisDate = System.currentTimeMillis(),
+                notes = "Cilt lekesi analiz edildi. Doktor kontrolü önerilir."
+            )
+            isAnalyzing = false
+        }, 2000)
+    }
+    
+    // Check camera permission when screen is shown
+    LaunchedEffect(Unit) {
+        when (PackageManager.PERMISSION_GRANTED) {
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.CAMERA
+            ) -> {
+                showCamera = true
+            }
+            else -> {
+                permissionLauncher.launch(Manifest.permission.CAMERA)
+            }
+        }
+    }
     val analyzeImage = {
         isAnalyzing = true
         
@@ -113,16 +168,108 @@ fun ScanScreen(
         isAnalyzing = false
     }
 
+    // Camera Preview Composable
+    @androidx.annotation.OptIn(androidx.camera.core.ExperimentalGetImage::class)
+    @Composable
+    fun CameraPreview(
+        imageCapture: ImageCapture,
+        modifier: Modifier = Modifier,
+        lensFacing: Int = CameraSelector.LENS_FACING_BACK,
+        onCameraError: (String) -> Unit = {}
+    ) {
+        val lifecycleOwner = LocalLifecycleOwner.current
+        val context = LocalContext.current
+        val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
+        var preview by remember { mutableStateOf<Preview?>(null) }
+        
+        AndroidView(
+            factory = { ctx ->
+                val previewView = PreviewView(ctx)
+                val executor = ContextCompat.getMainExecutor(ctx)
+                
+                cameraProviderFuture.addListener({
+                    try {
+                        val cameraProvider = cameraProviderFuture.get()
+                        
+                        // Set up the preview use case
+                        preview = Preview.Builder().build().also {
+                            it.setSurfaceProvider(previewView.surfaceProvider)
+                        }
+                        
+                        // Set up the image capture use case
+                        val selector = CameraSelector.Builder()
+                            .requireLensFacing(lensFacing)
+                            .build()
+                        
+                        // Unbind all use cases before rebinding
+                        cameraProvider.unbindAll()
+                        
+                        // Bind use cases to the camera
+                        val camera = cameraProvider.bindToLifecycle(
+                            lifecycleOwner,
+                            selector,
+                            preview,
+                            imageCapture
+                        )
+                        
+                        // Set up flash
+                        camera.cameraControl.enableTorch(flashEnabled)
+                        
+                    } catch (e: Exception) {
+                        onCameraError("Kamera başlatılamadı: ${e.message}")
+                        Log.e("CameraPreview", "Use case binding failed", e)
+                    }
+                }, executor)
+                
+                previewView
+            },
+            modifier = modifier
+        )
+        
+        // Update flash state when it changes
+        LaunchedEffect(flashEnabled) {
+            try {
+                val cameraProvider = cameraProviderFuture.get()
+                val camera = cameraProvider.unbindAll().firstOrNull()
+                camera?.cameraControl?.enableTorch(flashEnabled)
+            } catch (e: Exception) {
+                Log.e("CameraPreview", "Error updating flash state", e)
+            }
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Yapay Zeka Taraması") },
+                title = { Text("Tarama Yap") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
-                            painter = painterResource(id = R.drawable.ic_back),
+                            imageVector = Icons.Default.ArrowBack,
                             contentDescription = "Geri"
                         )
+                    }
+                },
+                actions = {
+                    if (showCamera) {
+                        IconButton(onClick = { 
+                            lensFacing = if (lensFacing == CameraSelector.LENS_FACING_BACK) 
+                                CameraSelector.LENS_FACING_FRONT 
+                            else 
+                                CameraSelector.LENS_FACING_BACK
+                        }) {
+                            Icon(
+                                imageVector = Icons.Default.Cameraswitch,
+                                contentDescription = "Kamera Değiştir"
+                            )
+                        }
+                        IconButton(onClick = { flashEnabled = !flashEnabled }) {
+                            Icon(
+                                imageVector = if (flashEnabled) Icons.Default.FlashOn 
+                                           else Icons.Default.FlashOff,
+                                contentDescription = if (flashEnabled) "Flaş Kapat" else "Flaş Aç"
+                            )
+                        }
                     }
                 }
             )
@@ -134,54 +281,15 @@ fun ScanScreen(
                 .padding(paddingValues)
         ) {
             if (showCamera) {
-                // Camera Preview
-                AndroidView(
-                    factory = { ctx ->
-                        val previewView = PreviewView(ctx)
-                        val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
-                        
-                        cameraProviderFuture.addListener({
-                            val cameraProvider = cameraProviderFuture.get()
-                            val preview = Preview.Builder().build().also {
-                                it.setSurfaceProvider(previewView.surfaceProvider)
-                            }
-                            
-                            val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-                            
-                            try {
-                                cameraProvider.unbindAll()
-                                cameraProvider.bindToLifecycle(
-                                    lifecycleOwner,
-                                    cameraSelector,
-                                    preview,
-                                    imageCapture
-                                )
-                            } catch (e: Exception) {
-                                // Handle error
-                            }
-                        }, executor)
-                        
-                        previewView
-                    },
-                    modifier = Modifier.fillMaxSize()
-                )
-                
-                // Camera Controls
                 Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(bottom = 32.dp),
-                    contentAlignment = Alignment.BottomCenter
+                    modifier = Modifier.fillMaxSize()
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        // Gallery Button
-                        IconButton(
-                            onClick = {
-                                galleryLauncher.launch("image/*")
+                    CameraPreview(
+                        imageCapture = imageCapture,
+                        modifier = Modifier.fillMaxSize(),
+                        lensFacing = lensFacing,
+                        onCameraError = { error ->
+                            cameraError = error
                             },
                             modifier = Modifier
                                 .size(56.dp)

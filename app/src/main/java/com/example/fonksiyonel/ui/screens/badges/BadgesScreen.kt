@@ -7,11 +7,15 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -35,31 +39,41 @@ fun BadgesScreen(
                 id = "badge1",
                 title = "İlk Tarama",
                 description = "İlk taramanızı gerçekleştirdiniz",
-                earnedDate = System.currentTimeMillis() - 30 * 24 * 60 * 60 * 1000
+                earnedDate = System.currentTimeMillis() - 30 * 24 * 60 * 60 * 1000,
+                color1 = Color(0xFFFF9A9E),
+                color2 = Color(0xFFFAD0C4)
             ),
             Badge(
                 id = "badge2",
                 title = "5 Tarama",
                 description = "5 tarama gerçekleştirdiniz",
-                earnedDate = System.currentTimeMillis() - 15 * 24 * 60 * 60 * 1000
+                earnedDate = System.currentTimeMillis() - 15 * 24 * 60 * 60 * 1000,
+                color1 = Color(0xFFA18CD1),
+                color2 = Color(0xFFFBC2EB)
             ),
             Badge(
                 id = "badge3",
                 title = "Düzenli Kullanıcı",
                 description = "Uygulamayı 30 gün boyunca düzenli olarak kullandınız",
-                earnedDate = System.currentTimeMillis() - 5 * 24 * 60 * 60 * 1000
+                earnedDate = System.currentTimeMillis() - 5 * 24 * 60 * 60 * 1000,
+                color1 = Color(0xFF84FAB0),
+                color2 = Color(0xFF8FD3F4)
             ),
             Badge(
                 id = "badge4",
                 title = "Doktor Paylaşımı",
                 description = "İlk kez bir raporu doktor ile paylaştınız",
-                earnedDate = System.currentTimeMillis() - 10 * 24 * 60 * 60 * 1000
+                earnedDate = System.currentTimeMillis() - 10 * 24 * 60 * 60 * 1000,
+                color1 = Color(0xFFFFD1FF),
+                color2 = Color(0xFFFAD0C4)
             ),
             Badge(
                 id = "badge5",
                 title = "Randevu Tamamlama",
                 description = "İlk randevunuzu başarıyla tamamladınız",
-                earnedDate = System.currentTimeMillis() - 7 * 24 * 60 * 60 * 1000
+                earnedDate = System.currentTimeMillis() - 7 * 24 * 60 * 60 * 1000,
+                color1 = Color(0xFFA6C1EE),
+                color2 = Color(0xFFFBC2EB)
             )
         )
     }
@@ -70,19 +84,25 @@ fun BadgesScreen(
                 id = "badge6",
                 title = "10 Tarama",
                 description = "10 tarama gerçekleştirin",
-                earnedDate = 0
+                earnedDate = 0,
+                color1 = Color(0xFFF6D365),
+                color2 = Color(0xFFFDA085)
             ),
             Badge(
                 id = "badge7",
                 title = "Uzman Kullanıcı",
                 description = "Uygulamayı 90 gün boyunca düzenli olarak kullanın",
-                earnedDate = 0
+                earnedDate = 0,
+                color1 = Color(0xFFFF9A9E),
+                color2 = Color(0xFFFAD0C4)
             ),
             Badge(
                 id = "badge8",
                 title = "Sağlık Elçisi",
                 description = "5 farklı doktor ile rapor paylaşın",
-                earnedDate = 0
+                earnedDate = 0,
+                color1 = Color(0xFFA6C1EE),
+                color2 = Color(0xFFFBC2EB)
             )
         )
     }
